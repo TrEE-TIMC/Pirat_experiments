@@ -1,12 +1,7 @@
 ---
-title: "experiment1.r"
-output: html_document
-date: "2023-12-02"
+title: "R Notebook"
+output: html_notebook
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Experiment 1: differential analysis on benchmark datasets
 
@@ -129,7 +124,6 @@ g <- g + ggtitle(title_roc) +
 g
 ```
 
-
 ###  Precision Recall (PR) Curve
 
 ```{r}
@@ -177,4 +171,3 @@ aucprs.c = lapply(prs, compute.aucpr)
 aucprs.c = unlist(aucprs.c)
 aucprs.c
 ```
-
