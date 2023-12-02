@@ -15,32 +15,27 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
 
 
 # Load Capizzi data
-# data.name = "Capizzi2022"
-# path = "../../datasets/Capizzi2022/Capizzi_Peptides.csv"
-# pseudo.mv.rate = 0.16
-# npcs = 2
-# pep.data.comp = get_capizzi_data(path, n.na.max = 1, rm.nested.pg = T)
-# saveRDS(pep.data.comp, "../processed_data/capizzi_comp.rds")
-# pep.data.comp = readRDS("../processed_data/capizzi_comp.rds")
-# folderexp = "pseudo_na_percent_"
+data.name = "Capizzi2022"
+pseudo.mv.rate = 0.16
+npcs = 2
+pep.data.comp = readRDS("../processed_data/capizzi_comp.rds")
+folderexp = "pseudo_na_percent_"
 
 
 # Load Vilallongue data
 data.name = "Vilallongue2022"
-path = "../../datasets/Vilallongue2022/"
 pseudo.mv.rate = 0.14
 npcs = 2
-# pep.data.comp = get_vilallongue_data(path, pep_ion = "ion", target="chiasma", n.na.max = 1, rm.nested.pg = T, norm.method = "vsn")
-# saveRDS(pep.data.comp, "../processed_data/vilallongue_chiasma_ion_vsn.rds")
 pep.data.comp = readRDS("../processed_data/vilallongue_scn_ion_vsn.rds")
 folderexp = "pseudo_SCN_ion_vsn_na_percent_"
 
-n.cores = 2 
-
-seednums = c(543210, 543211, 543212, 543213, 543214)
+n.cores = 2 # Number of cores for imputation in parallel.
+seednums = 0:4 + 543210
 mnar.mv.rates = c(0, 0.25, 0.5, 0.75, 1)
 
-impmethods = c("QRILC")
+impmethods = c("KNN", "GMS", "ImpSeqRob", "Pirat", "MissForest", "MinProb",
+               "QRILC", "SVD", "LLS", "trKNN", "SeqKNN", "ImpSeq", "BPCA", 
+               "MLE", "msImpute_mar", "msImpute_mnar")
 
 
 nsamples = nrow(pep.data.comp$peptides_ab)

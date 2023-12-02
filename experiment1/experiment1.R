@@ -1,5 +1,17 @@
-# source("../../Pirat/R/pipeline_impute.R")
-# source("../../Pirat/R/utils.R")
+library(Pirat)
+library(msImpute)
+library(MsCoreUtils)
+library(missForest)
+library(impute)
+library(imputeLCMD)
+library(pcaMethods)
+library(tidyverse)
+library(SeqKnn)
+library(GMSimpute)
+library(rrcovNA)
+
+source('../trKNN/Imput_funcs.r')
+
 
 put_imputed_in_or = function(imputed.ds, or.ds) {
   imputed.names = colnames(imputed.ds)
@@ -9,7 +21,7 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
   return(or.ds)
 }
 
-# Choose the dataset to impute by uncommenting following block
+# Choose the dataset to impute by uncommenting following 3 blocks
 
 # Load Bouyssié2020 data
 #
@@ -41,17 +53,14 @@ res.fold.name = file.path(res.fold.name, data.name)
 dir.create(res.fold.name)
 
 # Pirat
-library(Pirat)
 start_time <- Sys.time()
 res.mle_mnar = pipeline_llkimpute(mq.data.comp, pep.ab.comp=NULL, nu_factor=2)
 end_time = Sys.time()
-# res.mle_mnar = readRDS("../../2020-proteomics-transcriptomics/experiments/Proline/543210_w_shared/MLEMNAR.rds")
 saveRDS(res.mle_mnar, file = file.path(res.fold.name, "Pirat.rds"))
 difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "Pirat_time.rds"))
 
 # MsImpute MNAR
-library(msImpute)
 start_time <- Sys.time()
 res.msimpute_mnar = t(msImpute(
   t(
@@ -64,17 +73,15 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "msImpute_mnar_time.rds"))
 
 # MLE classics
-library("MsCoreUtils")
 start_time <- Sys.time()
 res.mleclass = impute_mle(mq.data.comp$peptides_ab)
 end_time = Sys.time()
-saveRDS(res.mleclass, file = file.path(res.fold.name, "MLECLASS.rds"))
+saveRDS(res.mleclass, file = file.path(res.fold.name, "MLE.rds"))
 difference <- difftime(end_time, start_time, units='mins')
-saveRDS(difference, file.path(res.fold.name, "MLECLASS_time.rds"))
+saveRDS(difference, file.path(res.fold.name, "MLE_time.rds"))
 
 
 # MsImpute
-library(msImpute)
 start_time <- Sys.time()
 res.msimpute = t(msImpute(
   t(
@@ -87,7 +94,6 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "msImpute_time.rds"))
 
 # MissForest
-library("missForest")
 start_time <- Sys.time()
 res.misfor = missForest(mq.data.comp$peptides_ab)
 end_time = Sys.time()
@@ -96,7 +102,6 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "MissForest_time.rds"))
 
 # KNN
-library("impute")
 start_time <- Sys.time()
 res.knn = impute.knn(t(mq.data.comp$peptides_ab), k = 10, rowmax = 1, colmax = 1)
 end_time = Sys.time()
@@ -107,7 +112,6 @@ saveRDS(difference, file.path(res.fold.name, "KNN_time.rds"))
 
 
 # QRILC
-library("imputeLCMD")
 start_time <- Sys.time()
 res.qrilc = impute.QRILC(t(mq.data.comp$peptides_ab))
 end_time = Sys.time()
@@ -118,7 +122,6 @@ saveRDS(difference, file.path(res.fold.name, "QRILC_time.rds"))
 
 
 # MinProb
-library("imputeLCMD")
 start_time <- Sys.time()
 res.minprob = t(impute.MinProb(t(mq.data.comp$peptides_ab)))
 end_time = Sys.time()
@@ -127,7 +130,6 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "MinProb_time.rds"))
 
 # SVD
-library(pcaMethods)
 start_time <- Sys.time()
 res.svd = pca(t(mq.data.comp$peptides_ab), nPcs = 2, method = "svdImpute")
 end_time = Sys.time()
@@ -137,7 +139,6 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "SVD_time.rds"))
 
 # LLS
-library(pcaMethods)
 start_time <- Sys.time()
 res.lls = llsImpute(mq.data.comp$peptides_ab)
 end_time = Sys.time()
@@ -147,8 +148,6 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "LLS_time.rds"))
 
 # trKNN
-source('Imput_funcs.r')
-library(tidyverse)
 sim_trKNN_wrapper <- function(data) {
   result <- data %>% as.matrix %>% t %>% imputeKNN(., k=10, distance='truncation') %>% t
   return(result)
@@ -163,17 +162,15 @@ difference <- difftime(end_time, start_time, units='mins')
 saveRDS(difference, file.path(res.fold.name, "trKNN_time.rds"))
 
 # Seq-KNN
-library(SeqKnn)
 start_time <- Sys.time()
 res.seqknn <- t(SeqKNN(t(mq.data.comp$peptides_ab), k = 10))
 end_time = Sys.time()
-saveRDS(res.seqknn, file = file.path(res.fold.name, "seqKNN.rds"))
+saveRDS(res.seqknn, file = file.path(res.fold.name, "SeqKNN.rds"))
 difference <- difftime(end_time, start_time, units='mins')
-saveRDS(difference, file.path(res.fold.name, "seqKNN_time.rds"))
+saveRDS(difference, file.path(res.fold.name, "SeqKNN_time.rds"))
 
 
 # GMS
-library(GMSimpute)
 start_time <- Sys.time()
 res.gms <- t(GMS.Lasso(
   t(
@@ -187,7 +184,6 @@ saveRDS(difference, file.path(res.fold.name, "GMS_time.rds"))
 
 
 # Impseq
-library(rrcovNA)
 start_time <- Sys.time()
 res.impseq <- t(impSeq(t(mq.data.comp$peptides_ab)))
 end_time = Sys.time()
@@ -197,7 +193,6 @@ saveRDS(difference, file.path(res.fold.name, "ImpSeq_time.rds"))
 
 
 # ImpSeqRob
-library(rrcovNA)
 start_time <- Sys.time()
 res.impseqrob <- t(impSeqRob(t(mq.data.comp$peptides_ab))$x)
 end_time = Sys.time()
@@ -207,7 +202,6 @@ saveRDS(difference, file.path(res.fold.name, "ImpSeqRob_time.rds"))
 
 
 # BPCA
-library("pcaMethods")
 start_time <- Sys.time()
 res.bpca = pca(t(mq.data.comp$peptides_ab), method = "bpca", nPcs = npcs)
 end_time = Sys.time()

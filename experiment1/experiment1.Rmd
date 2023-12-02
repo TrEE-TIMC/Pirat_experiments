@@ -1,9 +1,8 @@
 ---
-title: "R Notebook"
+title: "Experiment 1: differential analysis on benchmark datasets"
 output: html_notebook
 ---
 
-# Experiment 1: differential analysis on benchmark datasets
 
 ## Impute benchmark datasets with various methods
 
