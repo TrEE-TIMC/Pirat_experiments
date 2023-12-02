@@ -1,0 +1,180 @@
+---
+title: "experiment1.r"
+output: html_document
+date: "2023-12-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Experiment 1: differential analysis on benchmark datasets
+
+## Impute benchmark datasets with various methods
+
+Run script **experiment1.R** to impute Huang2020, Cox2014 and Bouyssié2020 benchmark datasets with 16 different imputation methods, including Pirat. Imputed datasets are stored in **res/**.
+
+## Load required packages
+
+```{r}
+library(pROC)
+library(ggplot2)
+```
+
+
+## Choose dataset to study
+
+Execute the cell among the 3 following corresponding to the dataset of interest.
+
+### Huang2020
+
+```{r}
+data.name = "Huang2020"
+path2res = file.path("res", data.name)
+pathdata = file.path("..", "data", "Huang2020_data_comp.rds")
+title_roc = "A - Huang2020, precursor-level, DIA, n=25"
+```
+
+### Cox2014
+
+```{r}
+data.name = "Cox2014"
+path2res = file.path("res", data.name)
+pathdata = file.path("..", "data", "cox_comp.rds")
+title_roc = "B - Cox2014, peptide-level, DDA, n=8"
+```
+
+
+### Bouyssié2020
+
+```{r}
+# data.name = "Proline"
+# path2res = file.path("../../2020-proteomics-transcriptomics/experiments/", data.name, "543210_w_shared")
+# pathdata = file.path(path2res, "DATA.rds")
+data.name = "Bouyssie2020"
+path2res = file.path("res", data.name)
+pathdata = file.path("..", "data", "bouyssie_comp.rds")
+title_roc = "C - Bouyssie2020, peptide-level, DDA, n=40"
+```
+
+## Compute p-values for each peptide and for each imputation method
+
+```{r}
+methods2comp = c("KNN", "GMS", "ImpSeqRob", "Pirat", "MissForest", "MinProb", "QRILC", "SVD", "LLS", "trKNN", "SeqKNN", "ImpSeq", "BPCA", "MLE", "msImpute_mar", "msImpute_mnar")
+data.pep = readRDS(pathdata)
+npeps = ncol(data.pep$peptides_ab)
+rocstats = data.frame(list(diff.pep = factor(data.pep$mask_pep_diff)))
+groups = as.factor(rep(1:10, each = 4))
+
+for (resfile in methods2comp) {
+  pathresmeth = file.path(path2res, paste(resfile, ".rds", sep = ""))
+  print(pathresmeth)
+  resimp = readRDS(pathresmeth)
+  pvals = apply(resimp, 2, function(x) {
+    pval = tryCatch(summary(aov(ab~group, data.frame(list(group = groups, ab = x))))[[1]][1,5],
+                    error = function(cond) {print(cond); return(1.)});
+    return(if (is.null(pval)) 1. else pval)})
+  rocstats[resfile] = pvals
+}
+
+saveRDS(rocstats, file.path(path2res, "rocstats.RDS")) # better to save as computation is a bit long
+# rocstats = readRDS(file.path(path2res, "rocstats.RDS"))
+
+rocs = list()
+for (i in 1:length(methods2comp)) {
+  rocs[[methods2comp[i]]] = roc(rocstats$diff.pep, rocstats[, methods2comp[i]])
+}
+```
+
+## Assessing performances
+
+### Method color code
+
+```{r}
+cols = c("MinProb" = "lightskyblue",
+         "GMS" = "darkmagenta",
+         "ImpSeqRob" = "peachpuff3",
+         "MissForest" = "slategray",
+         "SVD" = "darkgreen",
+         "LLS" = "saddlebrown",
+         "MLE" = "darkturquoise",
+         "KNN" = "lightcoral",
+         "SeqKNN" = "yellow3",
+         "QRILC"="violet",
+         "BPCA"="red", 
+         "ImpSeq" = "green", 
+         "trKNN" = "mediumpurple",
+         "msImpute_mar" = "olivedrab",
+         "msImpute_mnar" = "orange",
+         "Pirat" = "blue")
+```
+
+
+### ROC
+
+```{r}
+fplim = 0.99 # Limit threshold for false positive rate
+
+g = NULL
+g <- ggroc(rocs)
+g <- g + ggtitle(title_roc) +
+  scale_color_manual(
+      name = "Methods",
+      values = cols,
+      breaks = sort(names(rocs))
+  ) +
+  theme(panel.background = element_blank(),
+        aspect.ratio = 1) + 
+  xlim(c(1, fplim)) 
+g
+```
+
+
+###  Precision Recall (PR) Curve
+
+```{r}
+get.prec.recall = function(roc.cur) {
+  roc.all = coords(roc.cur, ret = "all", transpose = FALSE)
+  prec.rec = roc.all[, c("recall", "precision")]
+  return(prec.rec)
+}
+prs = lapply(rocs, get.prec.recall)
+
+concat.prs = do.call(rbind, prs)
+concat.prs$Method = factor(rep(names(prs), times = unlist(lapply(prs, nrow))),
+                           levels = names(cols))
+
+g <- ggplot(data = concat.prs, aes(x = recall, y = precision, color = Method)) +
+  geom_line()
+g <- g + ggtitle(title_roc) +
+  scale_color_manual(
+    values = cols,
+  ) + ylab("Precision (1 - FDP)") + xlab("Recall (TPR)") +
+  theme(panel.background = element_blank(),
+        # legend.position = c(0.8, 0.3), legend.key.width = unit(1, "cm"), 
+        # legend.text = element_text(size=11), 
+        # legend.title = element_text(size=11),
+        # legend.title.align=0.5,
+        legend.key = element_rect(fill = "white"),
+        aspect.ratio = 1)
+g <- g + ylim(c(0.9, 1))
+g <- g + geom_hline(yintercept=0.95, linetype = 3) + geom_hline(yintercept=0.99, linetype = 3)
+g
+```
+
+### AUCPR
+
+```{r}
+compute.aucpr = function(pr.frame) {
+  pr = pr.frame$precision
+  pr[is.na(pr)] = 1
+  rec = pr.frame$recall
+  aucpr = sum(pr[-length(pr)] * (rec[-length(rec)] - rec[-1]))
+  return(aucpr)
+}
+
+aucprs.c = lapply(prs, compute.aucpr)
+aucprs.c = unlist(aucprs.c)
+aucprs.c
+```
+

@@ -9,31 +9,26 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
   return(or.ds)
 }
 
-# Load Maxquant data
-# data.name = "MaxQuant"
-# npcs = 2
-# pathpeptides = "../../datasets/maxquant/peptides.txt"
-# pathsupmat2 = "../../datasets/maxquant/mcp.M113.031591-2.csv"
-# mq.data.comp = get.maxquant.data(pathpeptides, pathsupmat2, n.na.max = 7, rm.nested.pg = T)
-# saveRDS(mq.data.comp, file = file.path("..", "processed_data", "cox_comp.rds"))
-# mq.data.comp = readRDS(file.path("..", "processed_data", "cox_comp.rds"))
-# groups = factor(rep(1:2, each = 4))
+# Choose the dataset to impute by uncommenting following block
 
-# Load Proline data
-data.name = "Proline"
+# Load Bouyssié2020 data
+#
+data.name = "Bouyssie2020"
 npcs = 10
-# pathpeptides = "../../datasets/Proline/proline_pep_prot.csv"
-# mq.data.comp = get.proline.data(pathpeptides, n.na.max = 39, rm.nested.pg = T)
-# saveRDS(mq.data.comp, file = file.path("..", "processed_data", "bouyssie_comp.rds"))
 mq.data.comp = readRDS(file.path("..", "data", "bouyssie_comp.rds"))
 groups = factor(rep(1:10, each = 4))
 
+# Load Cox2014 data
+#
+# data.name = "Cox2014"
+# npcs = 2
+# mq.data.comp = readRDS(file.path("..", "processed_data", "cox_comp.rds"))
+# groups = factor(rep(1:2, each = 4))
+
 # Load Huang2020 data
+#
 # data.name = "Huang2020"
 # npcs = 5
-# pathpeptides = "../../datasets/Huang2020/Spike-in-biol-var-OT-SN-Report.txt"
-# # mq.data = get.huang.data(pathpeptides, n.na.max = 24, rm.nested.pg = T)
-# # saveRDS(mq.data.comp, file = file.path("..", "processed_data", "Huang2020_data_comp.rds"))
 # mq.data.comp = readRDS(file.path("..", "processed_data", "Huang2020_data_comp.rds"))
 # groups = factor(rep(1:5, each = 5))
 
@@ -42,9 +37,11 @@ seednum = 543210
 set.seed(seednum)
 res.fold.name = "res"
 dir.create(res.fold.name)
+res.fold.name = file.path(res.fold.name, data.name)
+dir.create(res.fold.name)
 
 # Pirat
-# library(Pirat)
+library(Pirat)
 start_time <- Sys.time()
 res.mle_mnar = pipeline_llkimpute(mq.data.comp, pep.ab.comp=NULL, nu_factor=2)
 end_time = Sys.time()
