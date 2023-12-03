@@ -1,0 +1,22 @@
+---
+title: "Experiment 2: Mask-and-impute on Capizzi2022 and Vilallongue2022"
+output: html_notebook
+---
+
+## Impute Capizzi2020 and Vilallongue2020 datasets with various methods
+
+Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Imputed datasets are stored in **res/**.
+
+## Choose dataset of interest
+
+```{r}
+
+```
+
+
+## Compute RMSE and MAEs
+
+```{r}
+
+```
+

@@ -1,9 +1,19 @@
-setwd("~/PhD_project/2020-proteomics-transcriptomics/experiment_script/")
-source("../data_loader/capizzi_data.R")
-source("../data_loader/vilallongue_data.R")
-library(reticulate)
 library(foreach)
 library(doParallel)
+
+# Imputation methods
+library(Pirat)
+library(msImpute)
+library(MsCoreUtils)
+library(missForest)
+library(impute)
+library(imputeLCMD)
+library(pcaMethods)
+library(tidyverse)
+library(SeqKnn)
+library(GMSimpute)
+library(rrcovNA)
+source('../trKNN/Imput_funcs.r')
 
 put_imputed_in_or = function(imputed.ds, or.ds) {
   imputed.names = colnames(imputed.ds)
@@ -13,29 +23,34 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
   return(or.ds)
 }
 
-
 # Load Capizzi data
 data.name = "Capizzi2022"
 pseudo.mv.rate = 0.16
 npcs = 2
-pep.data.comp = readRDS("../processed_data/capizzi_comp.rds")
-folderexp = "pseudo_na_percent_"
+pep.data.comp = readRDS("../data/capizzi_comp.rds")
+folderexp = file.path("res", data.name) 
 
+# Load Vilallongue SCN data
+# data.name = "Vilallongue2022_SCN"
+# pseudo.mv.rate = 0.14
+# npcs = 2
+# pep.data.comp = readRDS("../../2020-proteomics-transcriptomics/processed_data/vilallongue_sc_ion_vsn.rds")
+# pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
+# folderexp = file.path("res", data.name)
 
-# Load Vilallongue data
-data.name = "Vilallongue2022"
-pseudo.mv.rate = 0.14
-npcs = 2
-pep.data.comp = readRDS("../processed_data/vilallongue_scn_ion_vsn.rds")
-folderexp = "pseudo_SCN_ion_vsn_na_percent_"
+# Load Vilallongue SC data
+# data.name = "Vilallongue2022_SC"
+# pseudo.mv.rate = 0.14
+# npcs = 2
+# pep.data.comp = readRDS("../data/vilallongue_sc_ion_vsn.rds")
+# folderexp = file.path("res", data.name)
 
 n.cores = 2 # Number of cores for imputation in parallel.
 seednums = 0:4 + 543210
-mnar.mv.rates = c(0, 0.25, 0.5, 0.75, 1)
+mnar.mv.rates = seq(0, 1, 0.25)
 
-impmethods = c("KNN", "GMS", "ImpSeqRob", "Pirat", "MissForest", "MinProb",
-               "QRILC", "SVD", "LLS", "trKNN", "SeqKNN", "ImpSeq", "BPCA", 
-               "MLE", "msImpute_mar", "msImpute_mnar")
+impmethods = c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN",
+               "ImpSeq", "BPCA", "Pirat_degenerated")
 
 
 nsamples = nrow(pep.data.comp$peptides_ab)
@@ -45,7 +60,7 @@ npeps = ncol(pep.data.comp$peptides_ab)
 tol.pseudo.na = nsamples - 1
 mncar.fold = paste("MNAR", mnar.mv.rates)
 sd.t = sd(pep.data.comp$peptides_ab, na.rm = T)/2
-# Get approximated function of censoring mechanism mean vs given MNAR proportion
+# Get approximated curve of censoring mechanism mean vs given MNAR proportion
 expec_sum_m = Vectorize(
   function(mu, xx, sd) {return(1 - mean(pnorm(xx, mu, sd), na.rm = T))},
   vectorize.args = "mu")
@@ -54,7 +69,6 @@ qhigh = quantile(pep.data.comp$peptides_ab, probs = pseudo.mv.rate, na.rm = T)
 q_vec = seq(qlow, qhigh, length.out = 100)
 expec_sum_m_vec = expec_sum_m(q_vec, pep.data.comp$peptides_ab, sd.t)
 approx_q = approxfun(expec_sum_m_vec, q_vec)
-
 
 if (n.cores > 1) {
   cur.cluster = makeCluster(n.cores, type = "FORK", outfile = "")
@@ -66,13 +80,11 @@ if (n.cores > 1) {
   registerDoSEQ()
 }
 
-
 n.seeds = length(seednums)
 n.mnars = length(mnar.mv.rates)
 
-path2saveexp = file.path("..", "experiments", data.name,
-                         paste(folderexp, pseudo.mv.rate*100,
-                               sep=""))
+path2saveexp = file.path(folderexp, 
+                         paste(folderexp, pseudo.mv.rate*100, sep=""))
 dir.create(path2saveexp)
 
 overall_start <- Sys.time()
@@ -129,43 +141,27 @@ foreach(seednum = seednums) %:%
         saveRDS(pseudo.data, file = file.path(path2saveRDS, "DATA.rds"))
       }
       
-      # Our method
-      if (method == "MLEMNAR") {
-        source("../method/pipeline_impute.R")
+      # Pirat
+      if (method == "Pirat") {
         start_time <- Sys.time()
         res.mle_mnar = pipeline_llkimpute(pseudo.data, 
                                           pep.ab.comp=pseudo.data$comp_pep_abs, )
         end_time = Sys.time()
-        saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "MLEMNAR_2.rds"))
+        saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat.rds"))
         difference <- difftime(end_time, start_time, units='mins')
-        saveRDS(difference, file.path(path2saveRDS, "MLEMNAR_2_time.rds"))
+        saveRDS(difference, file.path(path2saveRDS, "Pirat_time.rds"))
       }
       
-      # Our method transpose
-      if (method == "MLEMNAR_transpose") {
-        source("../method/pipeline_impute.R")
-        start_time <- Sys.time()
-        res.mle_mnar = pipeline_llkimpute(pseudo.data, 
-                                          pep.ab.comp=pseudo.data$comp_pep_abs,
-                                          nu_factor=2, protidxs = NULL,
-                                          transpose = T)
-        end_time = Sys.time()
-        saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "MLEMNAR_transpose.rds"))
-        difference <- difftime(end_time, start_time, units='mins')
-        saveRDS(difference, file.path(path2saveRDS, "MLEMNAR_transpose_time.rds"))
-      }
-      
-      # Our method transpose
-      if (method == "MLEMNAR_degenerated") {
-        source("../method/pipeline_impute.R")
+      # Pirat degenerated
+      if (method == "Pirat_degenerated") {
         start_time <- Sys.time()
         res.mle_mnar = pipeline_llkimpute(pseudo.data, 
                                           pep.ab.comp=pseudo.data$comp_pep_abs,
                                           degenerated = T)
         end_time = Sys.time()
-        saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "MLEMNAR_degenerated.rds"))
+        saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat_degenerated.rds"))
         difference <- difftime(end_time, start_time, units='mins')
-        saveRDS(difference, file.path(path2saveRDS, "MLEMNAR_degenerated_time.rds"))
+        saveRDS(difference, file.path(path2saveRDS, "Pirat_degenerated_time.rds"))
       }
       
       
@@ -183,7 +179,6 @@ foreach(seednum = seednums) %:%
       
       # BPCA
       if (method == "BPCA") {
-        library("pcaMethods")
         start_time <- Sys.time()
         res.bpca = pca(t(pseudo.data$peptides_ab), method = "bpca", nPcs = npcs)
         end_time = Sys.time()
@@ -196,7 +191,6 @@ foreach(seednum = seednums) %:%
       
       # MissForest
       if (method == "MissForest") {
-        library("missForest")
         start_time <- Sys.time()
         res.misfor = missForest(pseudo.data$peptides_ab)
         saveRDS(res.misfor$ximp, file = file.path(path2saveRDS, "MissForest.rds"))
@@ -205,20 +199,18 @@ foreach(seednum = seednums) %:%
         saveRDS(difference, file.path(path2saveRDS, "MissForest_time.rds"))
       }
       
-      # MLE classic
-      if (method == "MLECLASS") {
-        library("MsCoreUtils")
+      # MLE
+      if (method == "MLE") {
         start_time <- Sys.time()
         res.mleclass = t(impute_mle(t(pseudo.data$peptides_ab)))
         end_time = Sys.time()
-        saveRDS(res.mleclass, file = file.path(path2saveRDS, "MLECLASS.rds"))
+        saveRDS(res.mleclass, file = file.path(path2saveRDS, "MLE.rds"))
         difference <- difftime(end_time, start_time, units='mins')
-        saveRDS(difference, file.path(path2saveRDS, "MLECLASS_time.rds"))
+        saveRDS(difference, file.path(path2saveRDS, "MLE_time.rds"))
       }
       
       # QRILC # Need at least 2 values
       if (method == "QRILC") {
-        library("imputeLCMD")
         start_time <- Sys.time()
         res.qrilc = impute.QRILC(t(pseudo.data$peptides_ab))
         res.qrilc = t(res.qrilc[[1]])
@@ -231,7 +223,6 @@ foreach(seednum = seednums) %:%
       
       # MinProb
       if (method == "MinProb") {
-        library("imputeLCMD")
         start_time <- Sys.time()
         res.minprob = t(impute.MinProb(t(pseudo.data$peptides_ab)))
         end_time = Sys.time()
@@ -243,7 +234,6 @@ foreach(seednum = seednums) %:%
       
       # SVD
       if (method == "SVD") { 
-        library(pcaMethods)
         start_time <- Sys.time()
         res.svd = pca(t(pseudo.data$peptides_ab), nPcs = npcs, method = "svdImpute")
         end_time = Sys.time()
@@ -255,7 +245,6 @@ foreach(seednum = seednums) %:%
       
       # LLS
       if (method == "LLS") { 
-        library(pcaMethods)
         start_time <- Sys.time()
         res.lls = llsImpute(pseudo.data$peptides_ab)
         end_time = Sys.time()
@@ -267,7 +256,6 @@ foreach(seednum = seednums) %:%
       
       # trKNN
       if (method == "trKNN") { 
-        source('../Imput_funcs.R')
         start_time <- Sys.time()
         res.trknn <- t(imputeKNN(
           t(pseudo.data$peptides_ab[, !colSums(is.na(pseudo.data$peptides_ab)) >= 3]), k = 10, distance = 'truncation'
@@ -280,19 +268,17 @@ foreach(seednum = seednums) %:%
       }
 
       # Seq-KNN
-      if (method == "seqKNN") { 
-        library(SeqKnn)
+      if (method == "SeqKNN") { 
         start_time <- Sys.time()
         res.seqknn <- t(SeqKNN(t(pseudo.data$peptides_ab), k = 10))
         end_time = Sys.time()
-        saveRDS(res.seqknn, file = file.path(path2saveRDS, "seqKNN.rds"))
+        saveRDS(res.seqknn, file = file.path(path2saveRDS, "SeqKNN.rds"))
         difference <- difftime(end_time, start_time, units='mins')
-        saveRDS(difference, file.path(path2saveRDS, "seqKNN_time.rds"))
+        saveRDS(difference, file.path(path2saveRDS, "SeqKNN_time.rds"))
       }
 
       # GMS
       if (method == "GMS") { 
-        library(GMSimpute)
         start_time <- Sys.time()
         res.gms <- t(GMS.Lasso(
           t(
@@ -307,7 +293,6 @@ foreach(seednum = seednums) %:%
       
       # Impseq
       if (method == "ImpSeq") { 
-        library(rrcovNA)
         start_time <- Sys.time()
         res.impseq <- t(impSeq(t(pseudo.data$peptides_ab)))
         end_time = Sys.time()
@@ -318,7 +303,6 @@ foreach(seednum = seednums) %:%
 
       # ImpSeqRob
       if (method == "ImpSeqRob") { 
-        library(rrcovNA)
         start_time <- Sys.time()
         res.impseqrob <- t(impSeqRob(t(pseudo.data$peptides_ab))$x)
         end_time = Sys.time()
