@@ -5,7 +5,7 @@ output: html_notebook
 
 ## Impute Capizzi2020 and Vilallongue2020 datasets with various methods
 
-Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Imputed datasets are stored in **res/**.
+Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Pseudo MVs with various MNAR ratio are first generated with different seeds. Then, the resulting datasets containing pseudo MVs are imputed with these methods and stored in **res/**.
 
 ## Required packages
 
@@ -83,7 +83,6 @@ mnar.perc = seq(0, 1, 0.25)
 mnar.perc.files = paste("MNAR", mnar.perc)
 seeds = as.character(0:4 + 543210)
 methods2comp = c("Pirat", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA", "Pirat_degenerated")
-# methods2comp = c("MLEMNAR", "MinProb", "QRILC", "seqKNN", "ImpSeq", "BPCA", "MLEMNAR_degenerated")
 methodfiles = paste(methods2comp, ".rds", sep = "")
 
 n_mnar_perc = length(mnar.perc)
@@ -150,9 +149,6 @@ for (i in 1:length(mnar.perc)) {
     mean_rmses[idx2replace, sd_col2replace] = apply(rmses[idx_row, col2replace], 2, sd, na.rm = F)
   }
 }
-# mean_rmses$Method[mean_rmses$Method == "MLEMNAR"] = "Pirat"
-# mean_rmses$Method[mean_rmses$Method == "seqKNN"] = "SeqKNN"
-# mean_rmses$Method[mean_rmses$Method == "MLEMNAR_degenerated"] = "Pirat-Degenerated"
 ```
 
 ## Color for curves

@@ -1,5 +1,7 @@
 library(foreach)
 library(doParallel)
+source("../data_load/capizzi_data.R")
+source("../utils.R")
 
 # Imputation methods
 library(Pirat)
@@ -15,14 +17,9 @@ library(GMSimpute)
 library(rrcovNA)
 source('../trKNN/Imput_funcs.r')
 
-put_imputed_in_or = function(imputed.ds, or.ds) {
-  imputed.names = colnames(imputed.ds)
-  or.names = colnames(or.ds)
-  is.imputed = or.names %in% imputed.names
-  or.ds[, is.imputed] = imputed.ds
-  return(or.ds)
-}
 
+# Choose the dataset of the experiment
+#
 # Load Capizzi data
 data.name = "Capizzi2022"
 pseudo.mv.rate = 0.16
@@ -34,7 +31,6 @@ folderexp = file.path("res", data.name)
 # data.name = "Vilallongue2022_SCN"
 # pseudo.mv.rate = 0.14
 # npcs = 2
-# pep.data.comp = readRDS("../../2020-proteomics-transcriptomics/processed_data/vilallongue_sc_ion_vsn.rds")
 # pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
 # folderexp = file.path("res", data.name)
 
@@ -47,7 +43,7 @@ folderexp = file.path("res", data.name)
 
 n.cores = 2 # Number of cores for imputation in parallel.
 seednums = 0:4 + 543210
-mnar.mv.rates = seq(0, 1, 0.25)
+mnar.mv.rates = seq(0, 1, 0.25) # pseudo MVs rates
 
 impmethods = c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN",
                "ImpSeq", "BPCA", "Pirat_degenerated")
@@ -55,12 +51,11 @@ impmethods = c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN",
 
 nsamples = nrow(pep.data.comp$peptides_ab)
 npeps = ncol(pep.data.comp$peptides_ab)
-
-# Add pseudo missing values
-tol.pseudo.na = nsamples - 1
+tol.pseudo.na = nsamples - 1 # Peptides with tol.pseudo.na or more MVs are filtered out
 mncar.fold = paste("MNAR", mnar.mv.rates)
-sd.t = sd(pep.data.comp$peptides_ab, na.rm = T)/2
-# Get approximated curve of censoring mechanism mean vs given MNAR proportion
+
+# Get interpolated curve of Probit mean vs given MNAR proportion
+sd.t = sd(pep.data.comp$peptides_ab, na.rm = T)/2 # sd of the probit mechanism
 expec_sum_m = Vectorize(
   function(mu, xx, sd) {return(1 - mean(pnorm(xx, mu, sd), na.rm = T))},
   vectorize.args = "mu")
@@ -70,6 +65,7 @@ q_vec = seq(qlow, qhigh, length.out = 100)
 expec_sum_m_vec = expec_sum_m(q_vec, pep.data.comp$peptides_ab, sd.t)
 approx_q = approxfun(expec_sum_m_vec, q_vec)
 
+# Make clusters if necessary
 if (n.cores > 1) {
   cur.cluster = makeCluster(n.cores, type = "FORK", outfile = "")
   print(cur.cluster)
@@ -100,14 +96,15 @@ foreach(seednum = seednums) %:%
       path2saveRDS = file.path(path2saveRDS, seednum)
       dir.create(path2saveRDS)
       set.seed(seednum)
+      
+      # Add pseudo MVs
       if (mnar.mv.rate == 0) {
         q = -1000
       } else {
-        q = approx_q(mnar.mv.rate*pseudo.mv.rate) #as.logical(rbinom(sum(under.t), 1, mnar.mv.rate))
+        q = approx_q(mnar.mv.rate*pseudo.mv.rate)
       }
       tt = matrix(rnorm(nsamples*npeps, q, sd.t), nrow = nsamples,
                   ncol = npeps)
-  
       pseudo.data = pep.data.comp
       under.t = matrix(F, nrow = nsamples,
                        ncol = npeps)
