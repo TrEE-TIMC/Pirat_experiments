@@ -7,16 +7,246 @@ output: html_notebook
 
 Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Imputed datasets are stored in **res/**.
 
+## Required packages
+
+```{r}
+library(ggplot2)
+library(Pirat)
+```
+
+
 ## Choose dataset of interest
 
-```{r}
+### Capizzi2020
 
+```{r}
+name.data = "Capizzi2022"
+path2res = file.path("res", name.data)
+path2res = file.path("..", "..", "2020-proteomics-transcriptomics", "experiments", name.data, "pseudo_na_percent_16")
+name.title = "peptide-level, DDA, n=10"
+```
+
+### Vilallongue2020 SCN
+
+```{r}
+name.data = "Vilallongue2022_SCN"
+path2res = file.path("res", name.data)
+name.title = "precursor-level, DDA, n=8"
 ```
 
 
-## Compute RMSE and MAEs
+### Vilallongue2020 SC
 
 ```{r}
-
+name.data = "Vilallongue2022_SC"
+path2res = file.path("res", name.data)
+name.title = "precursor-level, DDA, n=8"
 ```
+
+## Error metrics functions
+
+```{r}
+compute_rmse = function(Ximp, Xcomp, Xref) {
+  na_gen = is.na(Xref) & !is.na(Xcomp) & !is.na(Ximp)
+  rmseval = sqrt(mean((Xcomp[na_gen] - Ximp[na_gen])^2))
+  return(rmseval)
+}
+
+compute_mae = function(Ximp, Xcomp, Xref) {
+  na_gen = is.na(Xref) & !is.na(Xcomp) & !is.na(Ximp)
+  rmseval = mean(abs(Xcomp[na_gen] - Ximp[na_gen]))
+  return(rmseval)
+}
+
+nbypep_rmse = function(Ximp, Xcomp, Xref) {
+  na_gen = is.na(Xref) & !is.na(Xcomp) & !is.na(Ximp)
+  vars = apply(Xcomp, 2, var)
+  Ximp[!na_gen] = NA
+  Xcomp[!na_gen] = NA
+  serrs = (Xcomp - Ximp)^2
+  sum_serrs_normalised = t(t(serrs) / vars)
+  return(sqrt(mean(sum_serrs_normalised, na.rm = T)))
+}
+
+rel_rmse = function(Ximp, Xcomp, Xref) {
+  na_gen = is.na(Xref) & !is.na(Xcomp) & !is.na(Ximp)
+  rmseval = sqrt(mean(((Xcomp[na_gen] - Ximp[na_gen]) / Xcomp[na_gen])^2))
+  return(rmseval)
+}
+```
+
+
+## Compute RMSE and MAEs for each MNAR ratio/seed/method and aggregate over seeds
+
+```{r}
+mnar.perc = seq(0, 1, 0.25)
+mnar.perc.files = paste("MNAR", mnar.perc)
+seeds = as.character(0:4 + 543210)
+methods2comp = c("Pirat", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA", "Pirat_degenerated")
+# methods2comp = c("MLEMNAR", "MinProb", "QRILC", "seqKNN", "ImpSeq", "BPCA", "MLEMNAR_degenerated")
+methodfiles = paste(methods2comp, ".rds", sep = "")
+
+n_mnar_perc = length(mnar.perc)
+n_seeds = length(seeds)
+n_meth = length(methods2comp)
+
+rmses = data.frame(expand.grid(list(mnar_perc=mnar.perc,
+                                    seed=seeds,
+                                    method=methods2comp), stringsAsFactors = F))
+rmses$rmse = NA
+rmses$n_by_pep_rmse = NA
+rmses$rel_rmse = NA
+rmses$mae = NA
+rmses$time_comp = NA
+for (i in 1:length(mnar.perc)) {
+  for (j in 1:length(seeds)) {
+    pathdata = file.path(path2res, mnar.perc.files[i], seeds[j], "DATA.rds")
+    print(pathdata)
+    data.pep = readRDS(pathdata)
+    idx.prot.not.singl = which(colSums(data.pep$adj) >= 1) # PG size
+    idx.pep.not.singl = which(rowSums(data.pep$adj[, idx.prot.not.singl]) >= 1) # Dont touch this line
+    complete_ab = data.pep$comp_pep_abs[, idx.pep.not.singl]
+    pseudo_abs = data.pep$peptides_ab[, idx.pep.not.singl]
+    
+    for (k in 1:length(methodfiles)) {
+      # print(methodfiles[k])
+      pathresmeth = file.path(path2res, mnar.perc.files[i], seeds[j], methodfiles[k])
+      if (methodfiles[k] %in% list.files(file.path(path2res, mnar.perc.files[i], seeds[j]))) {
+        resimp = readRDS(pathresmeth)[, idx.pep.not.singl]
+        # print(all(!is.na(resimp)))
+        rmse = compute_rmse(resimp, complete_ab, pseudo_abs)
+        idx_row = which(rmses$mnar_perc == mnar.perc[i] & rmses$seed == seeds[j] & rmses$method == methods2comp[k])
+        rmses$rmse[idx_row] = rmse
+        peprmse = nbypep_rmse(resimp, complete_ab, pseudo_abs)
+        rmses$n_by_pep_rmse[idx_row] = peprmse
+        relative_rmse = rel_rmse(resimp, complete_ab, pseudo_abs)
+        rmses$rel_rmse[idx_row] = relative_rmse
+        mae = compute_mae(resimp, complete_ab, pseudo_abs)
+        rmses$mae[idx_row] = mae
+        pathtimemeth = file.path(path2res, mnar.perc.files[i], seeds[j], paste(methods2comp[k], "_time.rds", sep=""))
+        timecomp = readRDS(pathtimemeth)
+        rmses$time_comp[idx_row] = timecomp
+      }
+    }
+  }
+}
+mean_rmses = data.frame(list(mnar_perc = rep(mnar.perc, each=n_meth),
+                             Method = rep(methods2comp, n_mnar_perc)))
+mean_rmses$rmse = NA
+mean_rmses$n_by_pep_rmse = NA
+mean_rmses$rel_rmse = NA
+mean_rmses$mae = NA
+mean_rmses$sd_rmse = NA
+mean_rmses$sd_n_by_pep_rmse = NA
+mean_rmses$sd_rel_rmse = NA
+mean_rmses$sd_mae = NA
+col2replace = c("rmse", "n_by_pep_rmse", "rel_rmse", "mae")
+sd_col2replace = c("sd_rmse", "sd_n_by_pep_rmse", "sd_rel_rmse", "sd_mae")
+for (i in 1:length(mnar.perc)) {
+  for (k in 1:length(methodfiles)) {
+    idx_row = which(rmses$mnar_perc == mnar.perc[i] & rmses$method == methods2comp[k])
+    idx2replace = which(mean_rmses$mnar_perc == mnar.perc[i] & mean_rmses$Method == methods2comp[k])
+    mean_rmses[idx2replace, col2replace] = colMeans(rmses[idx_row, col2replace], na.rm = F)
+    mean_rmses[idx2replace, sd_col2replace] = apply(rmses[idx_row, col2replace], 2, sd, na.rm = F)
+  }
+}
+# mean_rmses$Method[mean_rmses$Method == "MLEMNAR"] = "Pirat"
+# mean_rmses$Method[mean_rmses$Method == "seqKNN"] = "SeqKNN"
+# mean_rmses$Method[mean_rmses$Method == "MLEMNAR_degenerated"] = "Pirat-Degenerated"
+```
+
+## Color for curves
+
+```{r}
+cols = c("Pirat"="blue", 
+         "QRILC"="violet", 
+         "BPCA"="red", 
+         "ImpSeq" = "green", 
+         "SeqKNN" = "yellow3",
+         "msImpute_mnar" = "orange",
+         "msImpute_mar" = "olivedrab",
+         "MinProb" = "lightskyblue",
+         "trKNN" = "mediumpurple",
+         "GMS" = "darkmagenta",
+         "ImpSeqRob" = "peachpuff3",
+         "MissForest" = "slategray",
+         "SVD" = "darkgreen",
+         "LLS" = "saddlebrown",
+         "MLE" = "darkturquoise",
+         "KNN" = "lightcoral",
+         "Pirat_degenerated" = "grey")
+```
+
+
+## Display MAE curves
+
+
+```{r}
+methods2disp = c("Pirat", "Pirat_degenerated", "SeqKNN", "ImpSeq", "BPCA") # Choose imputation methods to display
+mean_rmses_best = mean_rmses[mean_rmses$Method %in% methods2disp,]
+p <- ggplot(mean_rmses_best, aes(x=mnar_perc, y=mae, color=Method, fill = Method)) + 
+   geom_point() + geom_line() +
+  geom_ribbon(aes(ymin=mae-sd_mae, ymax=mae+sd_mae),
+              linetype = 0, alpha=0.15)
+p <- p + xlab("MNAR proportion") + ylab("Average MAE") + 
+  ggtitle(paste(name.data, name.title)) +
+  scale_color_manual(
+    values = cols,
+    breaks = methods2disp
+  ) +
+  scale_fill_manual(
+    values = cols,
+    breaks = methods2disp
+  ) +
+  theme(panel.background = element_blank(),
+        # legend.position = c(0.75, 0.27),
+        legend.title.align=0.5,
+        legend.title = element_text(size=11),
+        legend.text = element_text(size=11),
+        legend.key = element_rect(fill = "white"))
+p
+```
+
+## Display RMSE curves
+
+```{r}
+methods2disp = c("Pirat", "Pirat_degenerated", "SeqKNN", "ImpSeq", "BPCA") # Choose imputation methods to display
+mean_rmses_best = mean_rmses[mean_rmses$Method %in% methods2disp,]
+p <- ggplot(mean_rmses_best, aes(x=mnar_perc, y=rmse, color=Method, fill = Method)) + 
+  geom_point() + geom_line() +
+  geom_ribbon(aes(ymin=rmse-sd_rmse, ymax=rmse+sd_rmse),
+              linetype = 0, alpha=0.15)
+p <- p + xlab("MNAR proportion") + ylab("Average RMSE") + 
+  ggtitle(paste(name.data, name.title)) +
+  scale_color_manual(
+    values = cols,
+    breaks = methods2disp
+  ) +
+  scale_fill_manual(
+    values = cols,
+    breaks = methods2disp
+  ) +
+  theme(panel.background = element_blank(),
+        # legend.position = c(0.75, 0.27),
+        legend.title.align=0.5,
+        legend.title = element_text(size=11),
+        legend.text = element_text(size=11),
+        legend.key = element_rect(fill = "white"))
+p
+# ggsave(file.path(path2res, paste0("rmse_mnar", name.data, ".pdf")),
+#   width = 5, height = 5,
+#   device = "pdf") # To save figure
+```
+## Within-PG correlations
+
+```{r}
+data.name = "Capizzi2022"
+pep.data.comp = readRDS("../data/capizzi_comp.rds")
+# data.name = "Vilallongue2022_SCN"
+# pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
+# data.name = "Vilallongue2022_SC"
+# pep.data.comp = readRDS("../data/vilallongue_sc_ion_vsn.rds")
+p = plot_pep_correlations(pep.data.comp, titlename = data.name)
+```
+
 
