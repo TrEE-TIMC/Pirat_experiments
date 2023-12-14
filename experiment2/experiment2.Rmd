@@ -22,7 +22,7 @@ library(Pirat)
 ```{r}
 name.data = "Capizzi2022"
 path2res = file.path("res", name.data)
-path2res = file.path("..", "..", "2020-proteomics-transcriptomics", "experiments", name.data, "pseudo_na_percent_16")
+# path2res = file.path("..", "..", "2020-proteomics-transcriptomics", "experiments", name.data, "pseudo_na_percent_16")
 name.title = "peptide-level, DDA, n=10"
 ```
 

@@ -79,9 +79,7 @@ if (n.cores > 1) {
 n.seeds = length(seednums)
 n.mnars = length(mnar.mv.rates)
 
-path2saveexp = file.path(folderexp, 
-                         paste(folderexp, pseudo.mv.rate*100, sep=""))
-dir.create(path2saveexp)
+dir.create(folderexp)
 
 overall_start <- Sys.time()
 foreach(seednum = seednums) %:%
@@ -91,7 +89,7 @@ foreach(seednum = seednums) %:%
       print(paste(seednum, idx.mnar.mv.rate, method))
       print("###################")
       mnar.mv.rate = mnar.mv.rates[idx.mnar.mv.rate]
-      path2saveRDS = file.path(path2saveexp, mncar.fold[idx.mnar.mv.rate])
+      path2saveRDS = file.path(folderexp, mncar.fold[idx.mnar.mv.rate])
       dir.create(path2saveRDS)
       path2saveRDS = file.path(path2saveRDS, seednum)
       dir.create(path2saveRDS)
