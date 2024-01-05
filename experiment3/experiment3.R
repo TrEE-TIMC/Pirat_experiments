@@ -1,7 +1,7 @@
 library(foreach)
 library(doParallel)
 library(Pirat)
-source("../data_loader/reset_data.R")
+source("../data_load/reset_data.R")
 source("../utils.R")
 
 # Load RESET data
@@ -46,7 +46,7 @@ approx_q = approxfun(expec_sum_m_vec, q_vec)
 
 # Make clusters if necessary
 if (n.cores > 1) {
-  cur.cluster = makeCluster(n.cores, type = "FORK", outfile = "")
+  cur.cluster = makeCluster(n.cores, type = "PSOCK", outfile = "")
   print(cur.cluster)
   registerDoParallel(cl = cur.cluster)
   getDoParRegistered()
