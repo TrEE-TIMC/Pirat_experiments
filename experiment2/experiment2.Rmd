@@ -5,7 +5,7 @@ output: html_notebook
 
 ## Impute Capizzi2020 and Vilallongue2020 datasets with various methods
 
-Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Pseudo MVs with various MNAR ratio are first generated with different seeds. Then, the resulting datasets containing pseudo MVs are imputed with these methods and stored in **res/**.
+Run script **experiment2.R** to impute Capizzi2022 and Vilallongue2022 datasets with SeqKNN, BPCA, ImpSeq, MinProb, QRILC, Pirat and Pirat_degenerated. Pseudo MVs with various MNAR ratio are first generated with different seeds on the complete dataset. Then, the resulting datasets containing pseudo MVs are imputed with these methods and stored in **res/**.
 
 ## Required packages
 
