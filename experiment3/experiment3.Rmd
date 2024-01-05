@@ -1,0 +1,133 @@
+---
+title: "Experiment 3: Mask-and-impute on Ropers2021 and Habowski2020"
+output: html_notebook
+---
+
+## Impute Ropers2021 and Habowski2020 with Pirat, Pirat-T and PIrat-S
+
+Run script **experiment3.R** to impute Ropers2021 and Habowski2020 datasets with Pirat-T and Pirat-S. Pseudo MVs, either MNAR or MCAR, are first generated with different seeds on the original datasets. Then, the resulting datasets containing pseudo MVs are imputed with these methods and stored in **res/**.
+
+## Required packages
+
+```{r}
+library(ggplot2)
+library(latex2exp)
+```
+
+## Boxplots absolute errors
+
+```{r}
+data.name = c("MouseColon", "RESET")
+mnar.perc = c(0, 1)
+settingmv = paste("MNAR", mnar.perc)
+seeds = c("543210", "543211", "543212", "543213", "543214", "543215", "543216", "543217", "543218", "543219") 
+# seeds = c("543210", "543210")
+# impmethods = c("MLEMNAR", "MLEMNAR_group9", "MLEMNAR_group18", "MLEMNAR_group36", "MissForest")
+impmethods = c("MLEMNAR_full", "MLEMNAR_TPG1", "MLEMNAR_PG") #, "MLEMNAR_PG_rna_sample", "ImpSeq")
+# path2res = file.path("experiments", dataset, settingmv, seedused, paste(impmethod, ".rds", sep=''))
+methodfiles = paste(impmethods, ".rds", sep = "")
+n_meth = length(impmethods)
+
+rmses = data.frame(list())
+
+
+for (cur.data.name in data.name) {
+  path2res = file.path("../../2020-proteomics-transcriptomics/experiments/")
+  dataset = file.path(path2res, cur.data.name, "pseudo_na_percent_1_mis")
+  for (settingmv.cur in settingmv) {
+    for (seed in seeds) {
+      print(seed)
+      path2data = file.path(dataset, settingmv.cur, seed, "DATA.rds")
+      gtdata = readRDS(path2data)
+      n_cc = ncol(gtdata$adj)
+      rmse_temp2 = data.frame(list())
+      for (method in impmethods) {
+        rmses_temp = data.frame(list())
+        path2res = file.path(dataset, settingmv.cur,
+                             seed, paste(method, ".rds", sep=''))
+        resimp = readRDS(path2res)
+        for (icc in 1:n_cc) {
+          idx_pep = which(gtdata$adj[, icc] == 1)
+          cc_size = length(idx_pep)
+          Xcomp = gtdata$comp_pep_abs[, idx_pep]
+          Xpseudo = gtdata$peptides_ab[, idx_pep]
+          Ximp = resimp[, idx_pep]
+          idx_pseudo_mis = which(!(is.na(Xcomp)) & is.na(Xpseudo), arr.ind = T)
+          if (length(idx_pseudo_mis) != 0) {
+            imp_vals = Ximp[idx_pseudo_mis]
+            gt_vals = Xcomp[idx_pseudo_mis]
+            abs_errs = abs(imp_vals - gt_vals)
+            npseudo_val = length(imp_vals)
+            frame2concat = data.frame(list(dataset = cur.data.name,
+                                           mnar_perc = settingmv.cur,
+                                           method = rep(method, npseudo_val),
+                                           seed = rep(seed, npseudo_val),
+                                           cc_size = rep(cc_size, npseudo_val), 
+                                           gt_val = gt_vals, imp_val = imp_vals, 
+                                           abs_err = abs_errs))
+            rmses_temp = rbind(rmses_temp, frame2concat)
+          }
+        }
+        rmse_temp2 = rbind(rmse_temp2, rmses_temp)
+      }
+      rmses = rbind(rmses, rmse_temp2)
+    }
+  }
+}
+
+
+rmses$cc_size = as.factor(rmses$cc_size)
+rmses = rmses[order(rmses$cc_size), ]
+rmses$method[rmses$method == "MLEMNAR_full"] = "Pirat"
+rmses$method[rmses$method == "MLEMNAR_PG"] = "Pirat-T"
+rmses$method[rmses$method == "MLEMNAR_TPG1"] = "Pirat-S"
+rmses$mnar_perc[rmses$mnar_perc == "MNAR 0"] = "MCAR"
+rmses$mnar_perc[rmses$mnar_perc == "MNAR 1"] = "MNAR"
+rmses$dataset[rmses$dataset == "RESET"] = "Ropers2021"
+rmses$dataset[rmses$dataset == "MouseColon"] = "Habowski2020"
+# rmses$method[rmses$method == "MLEMNAR_cov_ratio_02"] = "CenseMLE_cov_ratio_02"
+# rmses = readRDS("../experiments/rmses.rds")
+
+rmses_trunc = rmses[rmses$cc_size %in% c(1) & rmses$method == "Pirat", ] # & rmses$method %in% c("Ours_MNAR", "Ours_MNAR_PG", "ImpSeq") , ] # & !(rmses$method %in% c("CenseMLE_cov_ratio_02")),]
+# rmses_all = rmses
+# rmses_all$cc_size = rmses_all$cc_size != 1
+errors.not.pg1 = rmses$abs_err[rmses$dataset == "Ropers2021" & rmses$method == "Pirat" & rmses$cc_size != 1 & rmses$mnar_perc == "MCAR"]
+abs_errs = rmses_trunc$abs_err[rmses_trunc$dataset == "Ropers2021" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MCAR"]
+rmses_trunc$abs_err[rmses_trunc$dataset == "Ropers2021" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MCAR"] = abs_errs - median(errors.not.pg1)
+
+errors.not.pg1 = median(rmses$abs_err[rmses$dataset == "Ropers2021" & rmses$method == "Pirat" & rmses$cc_size != 1 & rmses$mnar_perc == "MNAR"])
+abs_errs = rmses_trunc$abs_err[rmses_trunc$dataset == "Ropers2021" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MNAR"]
+rmses_trunc$abs_err[rmses_trunc$dataset == "Ropers2021" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MNAR"] = abs_errs - median(errors.not.pg1)
+
+med.errors.not.pg1 = median(rmses$abs_err[rmses$dataset == "Habowski2020" & rmses$method == "Pirat" & rmses$cc_size != 1 & rmses$mnar_perc == "MCAR"])
+abs_errs = rmses_trunc$abs_err[rmses_trunc$dataset == "Habowski2020" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MCAR"]
+rmses_trunc$abs_err[rmses_trunc$dataset == "Habowski2020" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MCAR"] = abs_errs - med.errors.not.pg1
+
+med.errors.not.pg1 = median(rmses$abs_err[rmses$dataset == "Habowski2020" & rmses$method == "Pirat" & rmses$cc_size != 1 & rmses$mnar_perc == "MNAR"])
+abs_errs = rmses_trunc$abs_err[rmses_trunc$dataset == "Habowski2020" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MNAR"]
+rmses_trunc$abs_err[rmses_trunc$dataset == "Habowski2020" & rmses_trunc$method == "Pirat" & rmses_trunc$cc_size == 1 & rmses_trunc$mnar_perc == "MNAR"] = abs_errs - med.errors.not.pg1
+
+# rmses_trunc$mnar_perc[rmses_trunc$mnar_perc == "MNAR 0"] = "MCAR"
+# rmses_trunc$mnar_perc[rmses_trunc$mnar_perc == "MNAR 1"] = "MNAR"
+# 
+# rmses_trunc$dataset[rmses_trunc$dataset == "RESET"] = "Ropers2021"
+# rmses_trunc$dataset[rmses_trunc$dataset == "MouseColon"] = "Habowski2020"
+
+
+p <- ggplot(rmses_trunc, aes(x=dataset, y=abs_err, fill=mnar_perc)) + 
+  geom_boxplot(show.legend = TRUE)
+p <- p + ylab(TeX("$\\Delta_{AE}$"))
+p <- p + geom_hline(yintercept=0, linetype="dashed")
+p <- p + coord_cartesian(ylim = c(min(rmses_trunc$abs_err), 2))
+# p <- p + ggtitle(paste("Standardized Absolute Errors"))
+p <- p + theme(panel.background = element_blank(),
+               axis.title.x = element_blank())
+p <- p + guides(fill=guide_legend(title="Scenario"))
+p
+ggsave(file.path("..", "experiments", "saes_pg1.pdf"),
+       width = 3.79, height = 6.31,
+       device = "pdf")
+```
+
+
+

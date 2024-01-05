@@ -142,7 +142,6 @@ foreach(seednum = seednums) %:%
       
       # Our method ProteoGenomics
       if (method == "Pirat-T") {
-        source("../method/pipeline_impute.R")
         start_time <- Sys.time()
         res.mle_mnar_pg = pipeline_llkimpute(all.pseudo,
                                              pep.ab.comp = all.pseudo$comp_pep_abs,
