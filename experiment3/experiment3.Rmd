@@ -14,17 +14,18 @@ library(ggplot2)
 library(latex2exp)
 ```
 
-## Boxplots absolute errors
+## Compute errors of different methods
 
 ```{r}
 data.name = c("MouseColon", "RESET")
+# data.name = c("Habowski2020", "Ropers2021")
 mnar.perc = c(0, 1)
 settingmv = paste("MNAR", mnar.perc)
-seeds = c("543210", "543211", "543212", "543213", "543214", "543215", "543216", "543217", "543218", "543219") 
-# seeds = c("543210", "543210")
-# impmethods = c("MLEMNAR", "MLEMNAR_group9", "MLEMNAR_group18", "MLEMNAR_group36", "MissForest")
-impmethods = c("MLEMNAR_full", "MLEMNAR_TPG1", "MLEMNAR_PG") #, "MLEMNAR_PG_rna_sample", "ImpSeq")
-# path2res = file.path("experiments", dataset, settingmv, seedused, paste(impmethod, ".rds", sep=''))
+seeds = as.character(0:9 + 543210)
+impmethods = c("MLEMNAR_full", "MLEMNAR_TPG1", "MLEMNAR_PG")
+# impmethods = c("Pirat", "Pirat-S", "Pirat-T")
+path2exp = file.path("../../2020-proteomics-transcriptomics/experiments/")
+# path2res = file.path("res")
 methodfiles = paste(impmethods, ".rds", sep = "")
 n_meth = length(impmethods)
 
@@ -32,8 +33,7 @@ rmses = data.frame(list())
 
 
 for (cur.data.name in data.name) {
-  path2res = file.path("../../2020-proteomics-transcriptomics/experiments/")
-  dataset = file.path(path2res, cur.data.name, "pseudo_na_percent_1_mis")
+  dataset = file.path(path2exp, cur.data.name, "pseudo_na_percent_1_mis")
   for (settingmv.cur in settingmv) {
     for (seed in seeds) {
       print(seed)
@@ -78,16 +78,18 @@ for (cur.data.name in data.name) {
 
 rmses$cc_size = as.factor(rmses$cc_size)
 rmses = rmses[order(rmses$cc_size), ]
-rmses$method[rmses$method == "MLEMNAR_full"] = "Pirat"
-rmses$method[rmses$method == "MLEMNAR_PG"] = "Pirat-T"
-rmses$method[rmses$method == "MLEMNAR_TPG1"] = "Pirat-S"
+# rmses$method[rmses$method == "MLEMNAR_full"] = "Pirat"
+# rmses$method[rmses$method == "MLEMNAR_PG"] = "Pirat-T"
+# rmses$method[rmses$method == "MLEMNAR_TPG1"] = "Pirat-S"
 rmses$mnar_perc[rmses$mnar_perc == "MNAR 0"] = "MCAR"
 rmses$mnar_perc[rmses$mnar_perc == "MNAR 1"] = "MNAR"
-rmses$dataset[rmses$dataset == "RESET"] = "Ropers2021"
-rmses$dataset[rmses$dataset == "MouseColon"] = "Habowski2020"
-# rmses$method[rmses$method == "MLEMNAR_cov_ratio_02"] = "CenseMLE_cov_ratio_02"
-# rmses = readRDS("../experiments/rmses.rds")
+# rmses$dataset[rmses$dataset == "RESET"] = "Ropers2021"
+# rmses$dataset[rmses$dataset == "MouseColon"] = "Habowski2020"
+```
 
+## Boxplots absolute error minus median
+
+```{r}
 rmses_trunc = rmses[rmses$cc_size %in% c(1) & rmses$method == "Pirat", ] # & rmses$method %in% c("Ours_MNAR", "Ours_MNAR_PG", "ImpSeq") , ] # & !(rmses$method %in% c("CenseMLE_cov_ratio_02")),]
 # rmses_all = rmses
 # rmses_all$cc_size = rmses_all$cc_size != 1
@@ -124,10 +126,384 @@ p <- p + theme(panel.background = element_blank(),
                axis.title.x = element_blank())
 p <- p + guides(fill=guide_legend(title="Scenario"))
 p
-ggsave(file.path("..", "experiments", "saes_pg1.pdf"),
-       width = 3.79, height = 6.31,
-       device = "pdf")
+```
+## Boxplot Pirat absolute errors on singleton/non-singleton PGs 
+
+```{r}
+rmses_trunc = rmses[rmses$dataset == "Habowski2020" & rmses$method == "Pirat", ]
+rmses_trunc$cc_size = as.integer(levels(rmses_trunc$cc_size)[rmses_trunc$cc_size])
+rmses_trunc$cc_size = factor(rmses_trunc$cc_size > 1, labels = c("1", "> 1"))
+p <- ggplot(rmses_trunc, aes(x=mnar_perc, y=abs_err, fill=cc_size)) + 
+  geom_boxplot(show.legend = TRUE)
+p <- p + ylab("Absolute Errors")
+# p <- p + coord_cartesian(ylim = c(min(rmses_trunc$abs_err), 2))
+p <- p + ggtitle(paste("A - Habowski2020"))
+p <- p + theme(panel.background = element_blank(),
+               axis.title.x = element_blank())
+p <- p + guides(fill=guide_legend(title="PG size"))
+p
+rmses_trunc = rmses[rmses$dataset == "Ropers2021" & rmses$method == "Pirat", ]
+rmses_trunc$cc_size = as.integer(levels(rmses_trunc$cc_size)[rmses_trunc$cc_size])
+rmses_trunc$cc_size = factor(rmses_trunc$cc_size > 1, labels = c("1", "> 1"))
+p <- ggplot(rmses_trunc, aes(x=mnar_perc, y=abs_err, fill=cc_size)) + 
+  geom_boxplot(show.legend = TRUE)
+p <- p + ylab("Absolute Errors")
+# p <- p + coord_cartesian(ylim = c(min(rmses_trunc$abs_err), 2))
+p <- p + ggtitle(paste("B - Ropers2021"))
+p <- p + theme(panel.background = element_blank(),
+               axis.title.x = element_blank())
+p <- p + guides(fill=guide_legend(title="PG size"))
+p
 ```
 
+## Boxplot absolute errors Pirat, Pirat-S and Pirat-T
 
+```{r}
+cols = c("Pirat-S" = "#F8766D",
+         "Pirat-T" = "#00BA38",
+         "Pirat" = "#619CFF")
+rmses_trunc = rmses[rmses$cc_size %in% c(1) & rmses$dataset == "Habowski2020", ]
+p <- ggplot(rmses_trunc, aes(x=mnar_perc, y=abs_err, fill=method)) + 
+  geom_boxplot(show.legend = TRUE)
+p <- p + scale_fill_manual(
+  name = "Methods",
+  values = cols
+)
+p <- p + ylab("Absolute errors")
+# p <- p + coord_cartesian(ylim = c(0, 2))
+p <- p + ggtitle(paste("A - Habowski2020"))
+p <- p + theme(panel.background = element_blank(),
+               axis.title.x = element_blank())
+p <- p + guides(fill=guide_legend(title="Method"))
+p
+
+rmses_trunc = rmses[rmses$cc_size %in% c(1) & rmses$dataset == "Ropers2021", ]
+p <- ggplot(rmses_trunc, aes(x=mnar_perc, y=abs_err, fill=method)) + 
+  geom_boxplot(show.legend = TRUE)
+p <- p + scale_fill_manual(
+  name = "Methods",
+  values = cols
+)
+p <- p + ylab("Absolute errors")
+# p <- p + coord_cartesian(ylim = c(0, 2))
+p <- p + ggtitle(paste("B - Ropers2021"))
+p <- p + theme(panel.background = element_blank(),
+               axis.title.x = element_blank())
+p <- p + guides(fill=guide_legend(title="Method"))
+p
+```
+
+## Histogram of number of MVs on peptides containing pseudo-MVs
+
+```{r}
+##############################
+# Non-singleton PGs
+##############################
+
+########### MouseCOlon 0 MNAR
+
+data.name = c("Habowski2020")
+mnar.perc = c(0)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+seeds = c("543210", "543211", "543212", "543213", "543214", "543215", "543216", "543217", "543218", "543219") 
+
+pseudo.mv.type = c()
+gt.data = readRDS("../data/habowski_comp_pg.rds")
+for (seed in seeds) {
+  print(seed)
+  # path2data = file.path("../../2020-proteomics-transcriptomics/", "experiments", data.name, "pseudo_na_percent_1_mis", settingmv, seed, "DATA.rds")
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) > 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("A - Habowski2020", "MCAR", "(PG size > 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGgt1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+########### MouseCOlon 1 MNAR
+
+mnar.perc = c(1)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+
+pseudo.mv.type = c()
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.data = readRDS("../processed_data/all_data_comp_pg_MouseColon.rds")
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) > 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("B - Habowski2020", "MNAR", "(PG size > 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGgt1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+######### RESET 0 MNAR
+
+data.name = c("Ropers2021")
+mnar.perc = c(0)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+pseudo.mv.type = c()
+gt.data = readRDS("../data/ropers_comp_pg.rds")
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) > 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("C - Ropers2021", "MCAR", "(PG size > 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGgt1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+######### RESET 1 MNAR
+
+mnar.perc = c(1)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+
+pseudo.mv.type = c()
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) > 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("D - Ropers2021", "MNAR", "(PG size > 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGgt1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+###############################
+# Singleton PGs
+###############################
+
+########### MouseCOlon 0 MNAR
+
+
+data.name = c("Haboswki2020")
+mnar.perc = c(0)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+
+pseudo.mv.type = c()
+gt.data = readRDS("../data/habowski_comp_pg.rds")
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) == 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("E - Habowski2020", "MCAR", "(PG size = 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGeq1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+########### MouseCOlon 1 MNAR
+
+mnar.perc = c(1)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+
+pseudo.mv.type = c()
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) == 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("F - Habowski2020", "MNAR", "(PG size = 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGeq1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+######### RESET 0 MNAR
+
+data.name = c("Ropers2021")
+mnar.perc = c(0)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+pseudo.mv.type = c()
+gt.data = readRDS("../data/ropers_comp_pg.rds")
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) == 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("G - Ropers2021", "MCAR", "(PG size = 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGeq1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+######### RESET 1 MNAR
+
+mnar.perc = c(1)
+settingmv = paste("MNAR", mnar.perc)
+print(data.name)
+print(settingmv)
+
+pseudo.mv.type = c()
+for (seed in seeds) {
+  print(seed)
+  path2data = file.path("res", data.name, settingmv, seed, "DATA.rds")
+  pseudodata = readRDS(path2data)
+  pseudo.ab = pseudodata$peptides_ab
+  gt.ab = gt.data$peptides_ab 
+  idx.pgs.1 = which(colSums(pseudodata$adj) == 1)
+  idx.pep.pg.1 = which(rowSums(pseudodata$adj[, idx.pgs.1]) >= 1)
+  pseudo.ab = pseudo.ab[, idx.pep.pg.1]
+  idx.same.pep = which(colnames(gt.ab) %in% colnames(pseudo.ab))
+  gt.ab = gt.ab[, idx.same.pep]
+  mask.pseudo = is.na(pseudo.ab) & !is.na(gt.ab)
+  n.mvs.mat = matrix(rep(colSums(is.na(pseudo.ab)), each=18), 18)
+  pseudo.mv.type = c(pseudo.mv.type, n.mvs.mat[mask.pseudo])
+}
+table(pseudo.mv.type)
+p <- ggplot(data = data.frame(N_MVs_per_pep = pseudo.mv.type), aes(x = N_MVs_per_pep)) +
+  geom_bar() + ggtitle(paste("H - Ropers2021", "MNAR", "(PG size = 1)")) + 
+  xlab("Number of MVs per peptide of each pseudo-MV")
+p
+ggsave(file.path("..", "experiments", "hist_N_MVs", paste0(data.name, settingmv, "PGeq1.pdf")),
+       width = 5, height = 5,
+       device = "pdf")
+
+```
+
+## Estimation of missingness mechanism
+
+```{r}
+# data.pep.rna.mis = readRDS("../../2020-proteomics-transcriptomics/processed_data/all_data_comp_pg_RESET.rds")
+
+data.pep.rna.mis = readRDS("../data/ropers_comp_pg.rds")
+mv_rates = colMeans(is.na(data.pep.rna.mis$peptides_ab))
+mean_abund = colMeans(data.pep.rna.mis$peptides_ab, na.rm = T)
+mean_abund_sorted = sort(mean_abund, index.return = T)
+mv_rates_sorted = mv_rates[mean_abund_sorted$ix]
+kernel_size = 10
+probs = rep(0, length(mean_abund) - kernel_size + 1)
+for (i in 1:length(probs)) {
+  probs[i] = mean(mv_rates_sorted[i:(i + kernel_size - 1)])
+}
+not0 = probs != 0
+m_ab_sorted = mean_abund_sorted$x[not0]
+probs = probs[not0]
+plot(m_ab_sorted[1:length(probs)], log(probs),
+     main=paste0("Ropers2021, k=",kernel_size), ylab="log(p_mis)", 
+     xlab="observed mean")
+res.reg = lm(log(probs) ~ m_ab_sorted[1:length(probs)])
+sum.reg.reg = summary(res.reg)
+print(sum.reg.reg)
+abline(res.reg, col="red")
+mylabel = bquote(italic(R)^2 == .(format(summary(res.reg)$r.squared, digits = 3)))
+text(x = 16, y = -2.5, labels = mylabel)
+
+phi0 = -res.reg$coef[1]
+phi = -res.reg$coef[2]
+if ((phi <= 1e-3) | (sum.reg.reg$coefficients[2,4] > 0.001)) {
+  phi = 0
+}
+print(paste("Gamma0 estimated = ", phi0))
+print(paste("Gamma1 estimated = ", phi))
+```
 
