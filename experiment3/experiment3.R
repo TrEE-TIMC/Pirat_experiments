@@ -119,6 +119,7 @@ foreach(seednum = seednums) %:%
       
       # Pirat
       if (method == "Pirat") {
+        library(Pirat)
         start_time <- Sys.time()
         res.mle_mnar = pipeline_llkimpute(all.pseudo, 
                                           pep.ab.comp = all.pseudo$comp_pep_abs)
@@ -130,6 +131,7 @@ foreach(seednum = seednums) %:%
       
       # Pirat-S
       if (method == "Pirat-S") {
+        library(Pirat)
         start_time <- Sys.time()
         res.mle_mnar.tpg1 = pipeline_llkimpute(all.pseudo,
                                                pep.ab.comp = all.pseudo$comp_pep_abs,
@@ -142,6 +144,7 @@ foreach(seednum = seednums) %:%
       
       # Our method ProteoGenomics
       if (method == "Pirat-T") {
+        library(Pirat)
         start_time <- Sys.time()
         res.mle_mnar_pg = pipeline_llkimpute(all.pseudo,
                                              pep.ab.comp = all.pseudo$comp_pep_abs,
