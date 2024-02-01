@@ -17,15 +17,15 @@ library(latex2exp)
 ## Compute errors of different methods
 
 ```{r}
-data.name = c("MouseColon", "RESET")
-# data.name = c("Habowski2020", "Ropers2021")
+# data.name = c("MouseColon", "RESET")
+# impmethods = c("MLEMNAR_full", "MLEMNAR_TPG1", "MLEMNAR_PG")
+# path2exp = file.path("../../2020-proteomics-transcriptomics/experiments/")
+data.name = c("Habowski2020", "Ropers2021")
+impmethods = c("Pirat", "Pirat-S", "Pirat-T")
+path2exp = file.path("res")
 mnar.perc = c(0, 1)
 settingmv = paste("MNAR", mnar.perc)
 seeds = as.character(0:9 + 543210)
-impmethods = c("MLEMNAR_full", "MLEMNAR_TPG1", "MLEMNAR_PG")
-# impmethods = c("Pirat", "Pirat-S", "Pirat-T")
-path2exp = file.path("../../2020-proteomics-transcriptomics/experiments/")
-# path2res = file.path("res")
 methodfiles = paste(impmethods, ".rds", sep = "")
 n_meth = length(impmethods)
 
@@ -33,7 +33,7 @@ rmses = data.frame(list())
 
 
 for (cur.data.name in data.name) {
-  dataset = file.path(path2exp, cur.data.name, "pseudo_na_percent_1_mis")
+  dataset = file.path(path2exp, cur.data.name)
   for (settingmv.cur in settingmv) {
     for (seed in seeds) {
       print(seed)
@@ -506,4 +506,3 @@ if ((phi <= 1e-3) | (sum.reg.reg$coefficients[2,4] > 0.001)) {
 print(paste("Gamma0 estimated = ", phi0))
 print(paste("Gamma1 estimated = ", phi))
 ```
-
