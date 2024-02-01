@@ -140,7 +140,8 @@ foreach(seednum = seednums) %:%
       if (method == "Pirat") {
         start_time <- Sys.time()
         res.mle_mnar = pipeline_llkimpute(pseudo.data, 
-                                          pep.ab.comp=pseudo.data$comp_pep_abs, )
+                                          pep.ab.comp=pseudo.data$comp_pep_abs)
+        res.mle_mnar = res.mle_mnar$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat.rds"))
         difference <- difftime(end_time, start_time, units='mins')
@@ -153,6 +154,7 @@ foreach(seednum = seednums) %:%
         res.mle_mnar = pipeline_llkimpute(pseudo.data, 
                                           pep.ab.comp=pseudo.data$comp_pep_abs,
                                           degenerated = T)
+        res.mle_mnar = res.mle_mnar$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat_degenerated.rds"))
         difference <- difftime(end_time, start_time, units='mins')
