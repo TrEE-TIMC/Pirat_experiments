@@ -4,6 +4,9 @@ library(Pirat)
 source("../data_load/reset_data.R")
 source("../utils.R")
 
+# Create repo of all results
+dir.create("res")
+
 # Load RESET data
 name.data = "Ropers2021"
 cond_idx_rna = 1:18

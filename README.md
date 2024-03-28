@@ -4,7 +4,7 @@ Experiments related to the results showed in the article describing Pirat.
 
 ## Download and install Pirat
 
-All instructions to download and install Pirat package are available on the following repository: [https://github.com/prostarproteomics/Pirat](https://github.com/prostarproteomics/Pirat).
+All instructions to download and install Pirat package are available on the following repository: [https://github.com/prostarproteomics/Pirat](https://github.com/prostarproteomics/Pirat). Pirat requires R 4.4.0.
 
 
 ## Differential analysis task

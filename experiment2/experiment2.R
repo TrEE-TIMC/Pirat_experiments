@@ -1,24 +1,26 @@
-library(foreach)
-library(doParallel)
+library(foreach) # CRAN
+library(doParallel) # CRAN
 source("../data_load/capizzi_data.R")
 source("../utils.R")
 
 # Imputation methods
-library(Pirat)
-library(msImpute)
-library(MsCoreUtils)
-library(missForest)
-library(impute)
-library(imputeLCMD)
-library(pcaMethods)
-library(tidyverse)
-library(SeqKnn)
-library(GMSimpute)
-library(rrcovNA)
+library(Pirat) # GitHub
+library(msImpute) # Bioconductor
+library(MsCoreUtils) # Bioconductor
+library(missForest) # CRAN
+library(impute) # Bioconductor
+library(imputeLCMD) # CRAN
+library(pcaMethods) # Bioconductor
+library(tidyverse) # CRAN
+library(SeqKnn) # CRAN
+library(GMSimpute) # CRAN
+library(rrcovNA) # CRAN
 source('../trKNN/Imput_funcs.r')
 
+# Create repo of all results
+dir.create("res")
 
-# Choose the dataset of the experiment
+# Choose the dataset of the experiment for all datasets
 #
 # Load Capizzi data
 data.name = "Capizzi2022"
