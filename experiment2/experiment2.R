@@ -15,7 +15,7 @@ library(tidyverse) # CRAN
 library(SeqKnn) # CRAN
 library(GMSimpute) # CRAN
 library(rrcovNA) # CRAN
-source('../trKNN/Imput_funcs.r')
+source('../trKNN/Imput_funcs.R')
 
 # Create repo of all results
 dir.create("res")
