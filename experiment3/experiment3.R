@@ -124,8 +124,8 @@ foreach(seednum = seednums) %:%
       if (method == "Pirat") {
         library(Pirat)
         start_time <- Sys.time()
-        res.mle_mnar = pipeline_llkimpute(all.pseudo, 
-                                          pep.ab.comp = all.pseudo$comp_pep_abs)
+        res.mle_mnar = my_pipeline_llkimpute(all.pseudo, 
+                                             pep.ab.comp = all.pseudo$comp_pep_abs)
         res.mle_mnar = res.mle_mnar$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat.rds"))

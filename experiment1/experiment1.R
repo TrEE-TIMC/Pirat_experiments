@@ -55,7 +55,7 @@ dir.create(res.fold.name)
 
 # Pirat
 start_time <- Sys.time()
-res.mle_mnar = pipeline_llkimpute(mq.data.comp, pep.ab.comp=NULL, alpha.factor=2)
+res.mle_mnar = my_pipeline_llkimpute(mq.data.comp, pep.ab.comp=NULL, alpha.factor=2)
 res.mle_mnar = res.mle_mnar$data.imputed
 end_time = Sys.time()
 saveRDS(res.mle_mnar, file = file.path(res.fold.name, "Pirat.rds"))

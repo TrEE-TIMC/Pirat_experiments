@@ -47,8 +47,7 @@ n.cores = 2 # Number of cores for imputation in parallel.
 seednums = 0:4 + 543210
 mnar.mv.rates = seq(0, 1, 0.25) # pseudo MVs rates
 
-impmethods = c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN",
-               "ImpSeq", "BPCA", "Pirat_degenerated")
+impmethods = c("Pirat", "Pirat_degenerated") #c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA", "Pirat_degenerated")
 
 
 nsamples = nrow(pep.data.comp$peptides_ab)
@@ -153,9 +152,9 @@ foreach(seednum = seednums) %:%
       # Pirat degenerated
       if (method == "Pirat_degenerated") {
         start_time <- Sys.time()
-        res.mle_mnar = pipeline_llkimpute(pseudo.data, 
-                                          pep.ab.comp=pseudo.data$comp_pep_abs,
-                                          degenerated = T)
+        res.mle_mnar = my_pipeline_llkimpute(pseudo.data, 
+                                             pep.ab.comp=pseudo.data$comp_pep_abs,
+                                             degenerated = T)
         res.mle_mnar = res.mle_mnar$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar, file = file.path(path2saveRDS, "Pirat_degenerated.rds"))
