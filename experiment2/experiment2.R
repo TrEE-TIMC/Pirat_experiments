@@ -47,7 +47,7 @@ n.cores = 2 # Number of cores for imputation in parallel.
 seednums = 0:4 + 543210
 mnar.mv.rates = seq(0, 1, 0.25) # pseudo MVs rates
 
-impmethods = c("Pirat", "Pirat_degenerated") #c("DATA", "Pirat", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA", "Pirat_degenerated")
+impmethods = c("DATA", "Pirat", "Pirat_degenerated", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA")
 
 
 nsamples = nrow(pep.data.comp$peptides_ab)
