@@ -23,18 +23,18 @@ dir.create("res")
 # Choose the dataset of the experiment for all datasets
 #
 # Load Capizzi data
-data.name = "Capizzi2022"
-pseudo.mv.rate = 0.16
-npcs = 2
-pep.data.comp = readRDS("../data/capizzi_comp.rds")
-folderexp = file.path("res", data.name) 
+# data.name = "Capizzi2022"
+# pseudo.mv.rate = 0.16
+# npcs = 2
+# pep.data.comp = readRDS("../data/capizzi_comp.rds")
+# folderexp = file.path("res", data.name) 
 
 # Load Vilallongue SCN data
-# data.name = "Vilallongue2022_SCN"
-# pseudo.mv.rate = 0.14
-# npcs = 2
-# pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
-# folderexp = file.path("res", data.name)
+data.name = "Vilallongue2022_SCN"
+pseudo.mv.rate = 0.14
+npcs = 2
+pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
+folderexp = file.path("res", data.name)
 
 # Load Vilallongue SC data
 # data.name = "Vilallongue2022_SC"
