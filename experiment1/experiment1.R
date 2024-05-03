@@ -26,17 +26,17 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
 
 # Load Bouyssié2020 data
 #
-data.name = "Bouyssie2020"
-npcs = 10
-mq.data.comp = readRDS(file.path("..", "data", "bouyssie_comp.rds"))
-groups = factor(rep(1:10, each = 4))
+# data.name = "Bouyssie2020"
+# npcs = 10
+# mq.data.comp = readRDS(file.path("..", "data", "bouyssie_comp.rds"))
+# groups = factor(rep(1:10, each = 4))
 
 # Load Cox2014 data
 #
-# data.name = "Cox2014"
-# npcs = 2
-# mq.data.comp = readRDS(file.path("..", "processed_data", "cox_comp.rds"))
-# groups = factor(rep(1:2, each = 4))
+data.name = "Cox2014"
+npcs = 2
+mq.data.comp = readRDS(file.path("..", "processed_data", "cox_comp.rds"))
+groups = factor(rep(1:2, each = 4))
 
 # Load Huang2020 data
 #
