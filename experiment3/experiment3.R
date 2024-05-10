@@ -137,9 +137,9 @@ foreach(seednum = seednums) %:%
       if (method == "Pirat-S") {
         library(Pirat)
         start_time <- Sys.time()
-        res.mle_mnar.tpg1 = pipeline_llkimpute(all.pseudo,
-                                               pep.ab.comp = all.pseudo$comp_pep_abs,
-                                               extension = "S")
+        res.mle_mnar.tpg1 = my_pipeline_llkimpute(all.pseudo,
+                                                  pep.ab.comp = all.pseudo$comp_pep_abs,
+                                                  extension = "S")
         res.mle_mnar.tpg1 = res.mle_mnar.tpg1$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar.tpg1, file = file.path(path2saveRDS, "Pirat-S.rds"))
@@ -151,12 +151,12 @@ foreach(seednum = seednums) %:%
       if (method == "Pirat-T") {
         library(Pirat)
         start_time <- Sys.time()
-        res.mle_mnar_pg = pipeline_llkimpute(all.pseudo,
-                                             pep.ab.comp = all.pseudo$comp_pep_abs,
-                                             extension = "T",
-                                             rna.cond.mask = cond_idx_rna,
-                                             pep.cond.mask = cond_idx_pep,
-                                             max.pg.size.pirat.t = 1)
+        res.mle_mnar_pg = my_pipeline_llkimpute(all.pseudo,
+                                                pep.ab.comp = all.pseudo$comp_pep_abs,
+                                                extension = "T",
+                                                rna.cond.mask = cond_idx_rna,
+                                                pep.cond.mask = cond_idx_pep,
+                                                max.pg.size.pirat.t = 1)
         res.mle_mnar_pg = res.mle_mnar_pg$data.imputed
         end_time = Sys.time()
         saveRDS(res.mle_mnar_pg, file = file.path(path2saveRDS, "Pirat-T.rds"))

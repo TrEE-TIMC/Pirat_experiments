@@ -91,9 +91,9 @@ res.msimpute = t(msImpute(
   ), method = "v2", group = groups))
 res.msimpute = put_imputed_in_or(res.msimpute, mq.data.comp$peptides_ab)
 end_time = Sys.time()
-saveRDS(res.msimpute, file = file.path(res.fold.name, "msImpute.rds"))
+saveRDS(res.msimpute, file = file.path(res.fold.name, "msImpute_mar.rds"))
 difference <- difftime(end_time, start_time, units='mins')
-saveRDS(difference, file.path(res.fold.name, "msImpute_time.rds"))
+saveRDS(difference, file.path(res.fold.name, "msImpute_mar_time.rds"))
 
 # MissForest
 start_time <- Sys.time()

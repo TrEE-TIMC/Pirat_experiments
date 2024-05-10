@@ -144,6 +144,7 @@ g <- g + ggtitle(title_roc) +
     values = cols,
   ) + ylab("Precision (1 - FDP)") + xlab("Recall (TPR)") +
   theme(panel.background = element_blank(),
+        legend.position = "none",
         # legend.position = c(0.8, 0.3), legend.key.width = unit(1, "cm"), 
         # legend.text = element_text(size=11), 
         # legend.title = element_text(size=11),
@@ -152,7 +153,9 @@ g <- g + ggtitle(title_roc) +
         aspect.ratio = 1)
 g <- g + ylim(c(0.9, 1))
 g <- g + geom_hline(yintercept=0.95, linetype = 3) + geom_hline(yintercept=0.99, linetype = 3)
-g
+ggsave(file.path(path2res, paste0("pr_curve_", data.name, ".pdf")),
+  width = 5, height = 5,
+  device = "pdf") # To save figure
 ```
 
 ### AUCPR
