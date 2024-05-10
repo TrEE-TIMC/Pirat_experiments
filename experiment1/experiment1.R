@@ -35,14 +35,14 @@ put_imputed_in_or = function(imputed.ds, or.ds) {
 #
 data.name = "Cox2014"
 npcs = 2
-mq.data.comp = readRDS(file.path("..", "processed_data", "cox_comp.rds"))
+mq.data.comp = readRDS(file.path("..", "data", "cox_comp.rds"))
 groups = factor(rep(1:2, each = 4))
 
 # Load Huang2020 data
 #
 # data.name = "Huang2020"
 # npcs = 5
-# mq.data.comp = readRDS(file.path("..", "processed_data", "Huang2020_data_comp.rds"))
+# mq.data.comp = readRDS(file.path("..", "data", "Huang2020_data_comp.rds"))
 # groups = factor(rep(1:5, each = 5))
 
 npeps = ncol(mq.data.comp$peptides_ab)
