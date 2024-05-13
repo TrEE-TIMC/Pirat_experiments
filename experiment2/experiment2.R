@@ -30,18 +30,18 @@ dir.create("res")
 # folderexp = file.path("res", data.name) 
 
 # Load Vilallongue SCN data
-data.name = "Vilallongue2022_SCN"
-pseudo.mv.rate = 0.14
-npcs = 2
-pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
-folderexp = file.path("res", data.name)
-
-# Load Vilallongue SC data
-# data.name = "Vilallongue2022_SC"
+# data.name = "Vilallongue2022_SCN"
 # pseudo.mv.rate = 0.14
 # npcs = 2
-# pep.data.comp = readRDS("../data/vilallongue_sc_ion_vsn.rds")
+# pep.data.comp = readRDS("../data/vilallongue_scn_ion_vsn.rds")
 # folderexp = file.path("res", data.name)
+
+# Load Vilallongue SC data
+data.name = "Vilallongue2022_SC"
+pseudo.mv.rate = 0.14
+npcs = 2
+pep.data.comp = readRDS("../data/vilallongue_sc_ion_vsn.rds")
+folderexp = file.path("res", data.name)
 
 n.cores = 2 # Number of cores for imputation in parallel.
 seednums = 543212 # 0:4 + 543210
