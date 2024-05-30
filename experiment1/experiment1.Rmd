@@ -64,6 +64,7 @@ for (resfile in methods2comp) {
   pathresmeth = file.path(path2res, paste(resfile, ".rds", sep = ""))
   print(pathresmeth)
   resimp = readRDS(pathresmeth)
+  rownames(resimp) = NULL
   pvals = apply(resimp, 2, function(x) {
     pval = tryCatch(summary(aov(ab~group, data.frame(list(group = groups, ab = x))))[[1]][1,5],
                     error = function(cond) {print(cond); return(1.)});

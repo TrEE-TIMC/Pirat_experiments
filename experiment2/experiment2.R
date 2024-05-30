@@ -44,10 +44,10 @@ pep.data.comp = readRDS("../data/vilallongue_sc_ion_vsn.rds")
 folderexp = file.path("res", data.name)
 
 n.cores = 2 # Number of cores for imputation in parallel.
-seednums = 543212 # 0:4 + 543210
-mnar.mv.rates = c(0.75) #seq(0, 1, 0.25) # pseudo MVs rates
+seednums = 0:4 + 543210
+mnar.mv.rates = seq(0, 1, 0.25) # pseudo MVs rates
 
-impmethods = c("Pirat") # c("DATA", "Pirat", "Pirat_degenerated", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA")
+impmethods = c("DATA", "Pirat", "Pirat_degenerated", "MinProb", "QRILC", "SeqKNN", "ImpSeq", "BPCA")
 
 
 nsamples = nrow(pep.data.comp$peptides_ab)
