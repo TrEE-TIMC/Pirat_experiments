@@ -8,19 +8,19 @@ source("../utils.R")
 dir.create("res")
 
 # Load RESET data
-name.data = "Ropers2021"
-cond_idx_rna = 1:18
-cond_idx_pep = 1:18
-npcs = 6
-all.data.comp = readRDS("../data/ropers_comp_pg.rds")
+# name.data = "Ropers2021"
+# cond_idx_rna = 1:18
+# cond_idx_pep = 1:18
+# npcs = 6
+# all.data.comp = readRDS("../data/ropers_comp_pg.rds")
 
 
 # Load MouseColon data
-# name.data = "Habowski2020"
-# npcs = 6
-# cond_idx_rna = c(1,1,1,2,2,2,2,3,3,3,3,3,4,4,4,5,5,6,6,6,6,6)
-# cond_idx_pep = rep(1:6, each=3)
-# all.data.comp = readRDS("../data/habowski_comp_pg.rds")
+name.data = "Habowski2020"
+npcs = 6
+cond_idx_rna = c(1,1,1,2,2,2,2,3,3,3,3,3,4,4,4,5,5,6,6,6,6,6)
+cond_idx_pep = rep(1:6, each=3)
+all.data.comp = readRDS("../data/habowski_comp_pg.rds")
 
 # Experiment design
 impmethods = c("DATA", "Pirat", "Pirat-T", "Pirat-S") # Imputation methods

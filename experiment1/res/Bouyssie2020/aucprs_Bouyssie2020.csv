@@ -1,0 +1,17 @@
+"methods";"AUCPR"
+"BPCA";94.61
+"GMS";81.21
+"ImpSeq";95.08
+"ImpSeqRob";90.47
+"KNN";79.94
+"LLS";92.19
+"MinProb";93.91
+"MissForest";88.91
+"MLE";23.58
+"msImpute_mar";94.22
+"msImpute_mnar";94.14
+"Pirat";97.22
+"QRILC";89.45
+"SeqKNN";93.81
+"SVD";89.03
+"trKNN";80.71
